@@ -48,7 +48,7 @@ try:
 except OSError:
     checks['boundary_record_readonly']=True
 checks['no_real_model_auth_file']=not (Path(os.environ['XDG_DATA_HOME'])/'opencode/auth.json').exists()
-checks['no_model_or_evaluator_secret_env']=not any(k.startswith(('OPENAI_','DEEPSEEK_','QWEN_','DASHSCOPE_','EVALUATOR_API_')) for k in os.environ)
+checks['no_model_or_evaluator_secret_env']=not any(k.startswith(('OPENAI_','DEEPSEEK_','QWEN_','DASHSCOPE_','GEMINI_','GOOGLE_','EVALUATOR_API_')) for k in os.environ)
 evaluator_port=int(os.environ['PROBE_EVALUATOR_PORT'])
 for label,host,port in [('direct_public_network','1.1.1.1',443),('host_service','172.17.0.1',evaluator_port),('loopback_service','127.0.0.1',evaluator_port)]:
     try:

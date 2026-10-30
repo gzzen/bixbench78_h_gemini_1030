@@ -130,6 +130,37 @@ A Qwen run is a separate experiment. C and H take their model from the frozen
 parent, so run B with Qwen first, then `scripts/run_c.sh` and `scripts/run_h.sh`
 on that B tag. Grading is unchanged; the grader's judge stays DeepSeek.
 
+## Gemini through the mmkg relay (`gemini/<id>`)
+
+Gemini runs through an OpenAI-compatible chat relay (`https://code.mmkg.cloud/v1`
+by default). Set the key in `.env`:
+
+```bash
+# .env (host only; never mounted into attempts)
+GEMINI_API_KEY=your-relay-key
+# Optional; requests go to <base>/chat/completions.
+GEMINI_BASE_URL=https://code.mmkg.cloud/v1
+```
+
+Then select the model with the `gemini/` prefix (`gemini-*` model IDs as listed
+by the relay's `/v1/models`, e.g. `gemini-3.1-pro`, `gemini-3-flash`):
+
+```bash
+MODEL=gemini/gemini-3.1-pro REASONING_EFFORT=high NATIVE_B_RUN_ID=gemini_rep01 scripts/run_b.sh
+```
+
+OpenCode uses its `@opencode/ai/providers/openai-compatible` package.
+`--reasoning-effort` (`low`, `medium` or `high`) is sent as the chat-completions
+`reasoning_effort` field; other values are refused. The relay accepts the field
+but does not validate it, so whether it reaches Gemini's thinking level is up to
+the relay. The gateway binds the attempt token, the exact model ID and the
+`/chat/completions` route, and injects `GEMINI_API_KEY` only there. The
+256-request limit still applies. The manifest records `provider: Gemini (mmkg relay)`.
+
+A Gemini run is a separate experiment. C and H take their model from the frozen
+parent, so run B with Gemini first, then `scripts/run_c.sh` and `scripts/run_h.sh`
+on that B tag. Grading is unchanged; the grader's judge stays DeepSeek.
+
 ## Check the boundary, then run a small diagnostic
 
 The Docker smoke test uses mock model responses; it does not contact the real

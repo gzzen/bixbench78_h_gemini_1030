@@ -21,6 +21,7 @@ DEFAULT_SCIENCE_HOSTS = ("mygene.info", "maayanlab.cloud", "www.ensembl.org",
 PROJECT_ENV = Path(__file__).resolve().parents[2] / ".env"
 DEFAULT_RELAY_BASE_URL = "https://xfastapi.ai"
 DEFAULT_QWEN_BASE_URL = "https://dashscope.aliyuncs.com/compatible-mode/v1"
+DEFAULT_GEMINI_BASE_URL = "https://code.mmkg.cloud/v1"
 # Reasoning models can stream nothing for minutes; matches OpenCode's chunk timeout.
 STREAM_IDLE_SECONDS = 300
 
@@ -74,6 +75,11 @@ def relay_base_url() -> str:
 def qwen_base_url() -> str:
     """DashScope's OpenAI-compatible API; requests go to <base>/chat/completions."""
     return base_url("QWEN_BASE_URL", DEFAULT_QWEN_BASE_URL)
+
+
+def gemini_base_url() -> str:
+    """The OpenAI-compatible Gemini relay; requests go to <base>/chat/completions."""
+    return base_url("GEMINI_BASE_URL", DEFAULT_GEMINI_BASE_URL)
 
 
 def public_addresses(host: str) -> list[str]:
@@ -210,6 +216,8 @@ class GatewayConfig:
             key, base, path, variable = project_setting("OPENAI_RELAY_API_KEY"), relay_base_url(), "/responses", "OPENAI_RELAY_API_KEY"
         elif provider == "qwen":
             key, base, path, variable = project_setting("QWEN_API_KEY"), qwen_base_url(), "/chat/completions", "QWEN_API_KEY"
+        elif provider == "gemini":
+            key, base, path, variable = project_setting("GEMINI_API_KEY"), gemini_base_url(), "/chat/completions", "GEMINI_API_KEY"
         else:
             raise ValueError("unsupported model provider")
         if not key:

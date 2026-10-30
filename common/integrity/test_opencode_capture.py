@@ -24,6 +24,7 @@ from conditions.native.runner import audit_and_enforce_code
 ROOT = Path(__file__).resolve().parents[2]
 RELAY_MODEL = "openai-relay/gpt-5.6-sol"
 QWEN_MODEL = "qwen/qwen-plus"
+GEMINI_MODEL = "gemini/gemini-3.1-pro"
 SCHEMA = ROOT / "conditions/native/question_result_no_id.schema.json"
 RESULT = {"status": "unresolved", "candidates": [], "summary": "Mock transport only."}
 
@@ -91,15 +92,30 @@ class OpenCodeCaptureTests(unittest.TestCase):
         self.assertEqual((manifest["provider"], manifest["wire_api"]), ("Qwen (DashScope)", "chat/completions"))
         self.assertEqual(model_id("qwen/qwq-32b"), "qwq-32b")
 
+    def test_gemini_config_uses_openai_compatible_chat_with_reasoning_effort(self):
+        config = provider_config(GEMINI_MODEL, "high")
+        provider = config["providers"]["gemini"]
+        self.assertEqual(list(config["providers"]), ["gemini"])
+        self.assertEqual(provider["env"], ["NATIVE_B_GATEWAY_TOKEN"])
+        self.assertEqual(provider["package"], "@opencode/ai/providers/openai-compatible")
+        self.assertEqual(provider["settings"], {"baseURL": "http://127.0.0.1:8765/model"})
+        self.assertEqual(provider["models"]["gemini-3.1-pro"]["body"], {"reasoning_effort": "high"})
+        self.assertEqual(provider_config(GEMINI_MODEL, "low")["providers"]["gemini"]["models"]["gemini-3.1-pro"]["body"],
+                         {"reasoning_effort": "low"})
+        manifest = agent_manifest(GEMINI_MODEL, "high")
+        self.assertEqual((manifest["provider"], manifest["wire_api"]), ("Gemini (mmkg relay)", "chat/completions"))
+        self.assertEqual(model_id("gemini/gemini-3-flash"), "gemini-3-flash")
+
     def test_models_and_efforts_are_bound_to_their_provider(self):
         self.assertEqual(model_id(RELAY_MODEL), "gpt-5.6-sol")
         for model in ("openai/gpt-5.6-sol", "openai-relay/deepseek-flash", "deepseek/gpt-5.6-sol",
                       "openai-relay/gpt-5.6-sol/extra", "openai-relay/", "qwen/gpt-x", "deepseek/qwen-plus",
-                      "openai-relay/qwen-plus", "qwen/"):
+                      "openai-relay/qwen-plus", "qwen/", "gemini/gpt-x", "qwen/gemini-3-flash",
+                      "openai-relay/gemini-3-flash", "gemini/", "gemini/gemini-"):
             with self.subTest(model=model), self.assertRaises(ValueError):
                 model_id(model)
         for model, effort in ((RELAY_MODEL, "max"), (DEFAULT_MODEL, "xhigh"), (QWEN_MODEL, "max"),
-                              (QWEN_MODEL, "low")):
+                              (QWEN_MODEL, "low"), (GEMINI_MODEL, "none"), (GEMINI_MODEL, "max")):
             with self.subTest(model=model, effort=effort), self.assertRaises(ValueError):
                 provider_config(model, effort)
         command = opencode_command("Prompt", SCHEMA, RELAY_MODEL)

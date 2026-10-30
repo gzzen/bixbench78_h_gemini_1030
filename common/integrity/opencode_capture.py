@@ -26,6 +26,9 @@ PROVIDERS = {
     # Qwen through DashScope's OpenAI-compatible chat API; thinking is on/off only.
     "qwen": {"pattern": r"(?:qwen|qwq)[a-zA-Z0-9._-]*", "efforts": ("none", "high"),
              "name": "Qwen (DashScope)", "wire_api": "chat/completions"},
+    # Gemini through an OpenAI-compatible chat relay (default https://code.mmkg.cloud/v1).
+    "gemini": {"pattern": r"gemini-[a-zA-Z0-9._-]+", "efforts": ("low", "medium", "high"),
+               "name": "Gemini (mmkg relay)", "wire_api": "chat/completions"},
 }
 RELAY_LIMIT = {"context": 1_000_000, "output": 128_000}
 
@@ -35,7 +38,8 @@ def model_route(model: str) -> tuple[str, str]:
     provider, _, identifier = model.partition("/")
     route = PROVIDERS.get(provider)
     if route is None or not re.fullmatch(route["pattern"], identifier):
-        raise ValueError("--model must be deepseek/deepseek-<name>, openai-relay/gpt-<name> or qwen/qwen<name>, "
+        raise ValueError("--model must be deepseek/deepseek-<name>, openai-relay/gpt-<name>, qwen/qwen<name> "
+                         "or gemini/gemini-<name>, "
                          "e.g. deepseek/deepseek-flash")
     return provider, identifier
 
@@ -89,6 +93,13 @@ def provider_config(model: str, effort: str, base_url: str = "http://127.0.0.1:8
             "package": "@opencode/ai/providers/openai-compatible",
             "settings": {"baseURL": base_url},
             "models": {identifier: {"body": {"enable_thinking": effort != "none"}}},
+        }
+    elif provider == "gemini":
+        provider_entry = {
+            "env": ["NATIVE_B_GATEWAY_TOKEN"],
+            "package": "@opencode/ai/providers/openai-compatible",
+            "settings": {"baseURL": base_url},
+            "models": {identifier: {"body": {"reasoning_effort": effort}}},
         }
     else:
         # Stateless Responses: OpenCode sends store=false and replays encrypted

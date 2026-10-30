@@ -117,6 +117,23 @@ class ProjectCredentialTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.qwen_config()
 
+    def gemini_config(self):
+        return GatewayConfig.from_host("temporary-token", "gemini-3.1-pro", "gemini")
+
+    def test_gemini_uses_its_own_key_and_mmkg_relay(self):
+        self.env_file.write_text("DEEPSEEK_API_KEY=deepseek-only\nQWEN_API_KEY=qwen-only\n")
+        with self.assertRaises(RuntimeError):
+            self.gemini_config()
+        self.env_file.write_text("DEEPSEEK_API_KEY=deepseek-only\nGEMINI_API_KEY=gemini-only\n")
+        config = self.gemini_config()
+        self.assertEqual(config.credential, "gemini-only")
+        self.assertEqual(config.upstream, "https://code.mmkg.cloud/v1")
+        self.assertEqual(config.model_path, "/chat/completions")
+        self.assertNotIn("GEMINI_API_KEY", os.environ)
+        self.env_file.write_text("GEMINI_API_KEY=gemini-only\nGEMINI_BASE_URL=http://mmkg.example\n")
+        with self.assertRaises(ValueError):
+            self.gemini_config()
+
 
 if __name__ == "__main__":
     unittest.main()
